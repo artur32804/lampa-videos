@@ -26,6 +26,52 @@
     { title: 'Документальні', url: '/films/documental_films/' }
   ];
 
+  var filterGroups = [
+    {
+      key: 'default',
+      title: 'Сортування',
+      items: [
+        { title: 'За замовчуванням', value: '' },
+        { title: 'По переглядах', value: 'news_read' },
+        { title: 'За рейтингом', value: 'rating' },
+        { title: 'За датою додавання', value: 'date' }
+      ]
+    },
+    {
+      key: 'starna',
+      title: 'Країна',
+      items: ['США', 'Велика Британія', 'Іспанія', 'Італія', 'Франція', 'Канада', 'Німеччина', 'Туреччина', 'Індія', 'Корея', 'Китай', 'Японія'].map(function (value) {
+        return { title: value, value: value };
+      })
+    },
+    {
+      key: 'janr',
+      title: 'Жанр',
+      items: ['біографія', 'бойовик', 'екшн', 'вестерн', 'детектив', 'документальний', 'драма', 'історія', 'комедія', 'кримінал', 'мелодрама', 'музика', 'мюзикл', 'пригоди', 'сімейний', 'спорт', 'трилер', 'жахи', 'фантастика', 'фентезі'].map(function (value) {
+        return { title: value, value: value };
+      })
+    },
+    {
+      key: 'god',
+      title: 'Рік',
+      items: ['2026', '2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '2014', '2013', '2012', '2011', '2010', '2009', '2008', '2007', '2006', '2005', '2004', '2003', '2002', '2001'].map(function (value) {
+        return { title: value, value: value };
+      })
+    },
+    {
+      key: 'studia',
+      title: 'Студія',
+      items: ['Netflix', 'Amazon', 'HBO', 'HBO Max'].map(function (value) {
+        return { title: value, value: value };
+      })
+    },
+    {
+      key: '-janr',
+      title: 'Приховати',
+      items: [{ title: 'аніме', value: 'аніме' }]
+    }
+  ];
+
   var icon = '<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="10" width="48" height="44" rx="8" stroke="currentColor" stroke-width="5"/><path d="M27 23v18l15-9-15-9z" fill="currentColor"/><path d="M18 16h28" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>';
 
   function notify(message) {
@@ -82,8 +128,11 @@
         function (a, c) {
           reject(new Error(network.errorDecode ? network.errorDecode(a, c) : 'Network error'));
         },
-        false,
-        options.headers && !PROXY_URL ? { headers: options.headers } : undefined
+        options.postData || false,
+        {
+          dataType: 'text',
+          headers: options.headers && !PROXY_URL ? options.headers : undefined
+        }
       );
     });
   }
@@ -129,7 +178,21 @@
       });
     });
 
-    return cards.slice(0, DEFAULT_LIMIT);
+    return cards;
+  }
+
+  function parseListing(html, pageUrl) {
+    var root = doc(html);
+    var next = root.querySelector('#nav-load a[href], a#nextlink[href], .pnext a[href]');
+    var total = root.querySelector('.navigation a:last-child');
+    var title = root.querySelector('.sect-title');
+
+    return {
+      cards: parseCards(html, pageUrl).slice(0, DEFAULT_LIMIT),
+      nextUrl: next ? absolute(next.getAttribute('href'), pageUrl) : '',
+      title: clean(title && title.textContent),
+      totalPages: total ? clean(total.textContent) : ''
+    };
   }
 
   function parseDetail(html, pageUrl) {
@@ -197,20 +260,26 @@
 
     var css = [
       '.uafix-screen{padding:1.5em 2em 3em;color:#fff}',
-      '.uafix-head{display:flex;align-items:center;gap:1em;margin-bottom:1.2em}',
+      '.uafix-head{display:flex;align-items:center;gap:1em;margin-bottom:1.2em;flex-wrap:wrap}',
       '.uafix-title{font-size:2.1em;font-weight:700}',
+      '.uafix-status{color:rgba(255,255,255,.62);font-size:1.05em}',
       '.uafix-tabs{display:flex;gap:.55em;flex-wrap:wrap;margin:0 0 1.2em}',
-      '.uafix-tab{padding:.55em .9em;border-radius:.35em;background:rgba(255,255,255,.08);font-size:1.05em}',
-      '.uafix-tab.focus,.uafix-card.focus,.uafix-button.focus,.uafix-search.focus{outline:.18em solid #ff6a00;background:rgba(255,106,0,.18)}',
+      '.uafix-tools{display:flex;gap:.55em;flex-wrap:wrap;margin:0 0 1.2em}',
+      '.uafix-tab,.uafix-tool,.uafix-more{padding:.55em .9em;border-radius:.35em;background:rgba(255,255,255,.08);font-size:1.05em}',
+      '.uafix-tab.active,.uafix-tool.active{background:rgba(255,106,0,.28);color:#fff}',
+      '.uafix-tab.focus,.uafix-tool.focus,.uafix-card.focus,.uafix-button.focus,.uafix-more.focus,.uafix-search.focus{outline:.18em solid #ff6a00;background:rgba(255,106,0,.18)}',
       '.uafix-search{width:min(34em,100%);padding:.75em 1em;margin:0 0 1.2em;border-radius:.35em;background:rgba(255,255,255,.10);color:#fff;border:0;font-size:1.1em}',
+      '.uafix-active-filter{margin:-.4em 0 1em;color:rgba(255,255,255,.72);font-size:1em}',
       '.uafix-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(15em,1fr));gap:1em}',
       '.uafix-card{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:.35em;background:#151515}',
       '.uafix-card img{width:100%;height:100%;object-fit:cover;display:block}',
       '.uafix-card:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.92))}',
       '.uafix-card-title{position:absolute;left:.75em;right:.75em;bottom:.7em;z-index:2;font-weight:700;font-size:1.05em;line-height:1.22}',
+      '.uafix-card-sub{position:absolute;left:.8em;right:.8em;bottom:3.1em;z-index:2;color:rgba(255,255,255,.72);font-size:.82em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       '.uafix-badge{position:absolute;z-index:2;right:.6em;top:.55em;background:rgba(0,0,0,.70);padding:.2em .45em;border-radius:.2em;font-weight:700}',
       '.uafix-label{position:absolute;z-index:2;left:.6em;top:.55em;background:#e85f1a;padding:.25em .5em;border-radius:.2em;font-weight:700}',
       '.uafix-empty{padding:2em;color:rgba(255,255,255,.7)}',
+      '.uafix-load{display:flex;justify-content:center;padding:1.4em 0 .2em}',
       '.uafix-detail{display:grid;grid-template-columns:minmax(18em,38em) 1fr;gap:2em;padding:1.5em 2em 3em;color:#fff}',
       '.uafix-poster{width:100%;aspect-ratio:16/9;object-fit:cover;background:#111}',
       '.uafix-detail h1{font-size:2em;line-height:1.15;margin:0 0 .2em}',
@@ -218,7 +287,9 @@
       '.uafix-meta{display:grid;grid-template-columns:max-content 1fr;gap:.55em 1.2em;margin:1em 0;color:rgba(255,255,255,.72)}',
       '.uafix-meta b{color:#fff;font-weight:600}',
       '.uafix-desc{font-size:1.08em;line-height:1.45;margin:1em 0 1.4em}',
+      '.uafix-actions{display:flex;gap:.75em;flex-wrap:wrap}',
       '.uafix-button{display:inline-flex;align-items:center;gap:.6em;background:#e94936;padding:.8em 1.2em;border-radius:.25em;font-size:1.18em;font-weight:800;text-transform:uppercase}',
+      '.uafix-button.secondary{background:rgba(255,255,255,.12);text-transform:none}',
       '@media(max-width:700px){.uafix-screen,.uafix-detail{padding:1em}.uafix-detail{grid-template-columns:1fr}.uafix-title{font-size:1.6em}}'
     ].join('\n');
 
@@ -231,12 +302,15 @@
       '<img src="', esc(card.image), '" alt="', esc(card.originalTitle || card.title), '">',
       card.label ? '<div class="uafix-label">' + esc(card.label) + '</div>' : '',
       card.age ? '<div class="uafix-badge">' + esc(card.age) + '</div>' : '',
+      card.originalTitle && card.originalTitle !== card.title ? '<div class="uafix-card-sub">' + esc(card.originalTitle) + '</div>' : '',
       '<div class="uafix-card-title">', esc(card.title), '</div>',
       '</div>'
     ].join('');
   }
 
   function openDetail(card) {
+    saveRecent(card);
+
     Lampa.Activity.push({
       component: 'uafix_detail',
       title: card.title,
@@ -244,11 +318,45 @@
     });
   }
 
+  function saveRecent(card) {
+    if (!Lampa.Storage || !card || !card.url) return;
+
+    var list = Lampa.Storage.get('uafix_recent', '[]');
+
+    if (typeof list === 'string') {
+      try {
+        list = JSON.parse(list);
+      } catch (e) {
+        list = [];
+      }
+    }
+
+    if (!Array.isArray(list)) list = [];
+
+    list = list.filter(function (item) {
+      return item && item.url !== card.url;
+    });
+
+    list.unshift(card);
+
+    Lampa.Storage.set('uafix_recent', list.slice(0, 30));
+  }
+
+  function youtubeWatchUrl(url) {
+    var match = (url || '').match(/\/embed\/([A-Za-z0-9_-]+)/);
+    return match ? 'https://www.youtube.com/watch?v=' + match[1] : url;
+  }
+
   function Dashboard(object) {
     this.object = object || {};
     this.network = new Lampa.Reguest();
     this.scroll = new Lampa.Scroll({ mask: true, over: true });
     this.category = categories[0];
+    this.cards = [];
+    this.filter = null;
+    this.nextUrl = '';
+    this.mode = 'category';
+    this.searchQuery = '';
   }
 
   Dashboard.prototype.create = function () {
@@ -256,21 +364,53 @@
 
     injectCss();
 
-    this.html = $('<div class="uafix-screen"><div class="uafix-head"><div class="uafix-title">UAFLIX</div></div><div class="uafix-tabs"></div><input class="uafix-search selector" placeholder="Пошук українською або оригінальною назвою"><div class="uafix-grid"></div></div>');
+    this.html = $('<div class="uafix-screen"><div class="uafix-head"><div class="uafix-title">UAFLIX</div><div class="uafix-status"></div></div><div class="uafix-tabs"></div><div class="uafix-tools"></div><input class="uafix-search selector" placeholder="Пошук українською або оригінальною назвою"><div class="uafix-active-filter"></div><div class="uafix-grid"></div><div class="uafix-load"></div></div>');
     this.tabs = this.html.find('.uafix-tabs');
+    this.tools = this.html.find('.uafix-tools');
     this.grid = this.html.find('.uafix-grid');
     this.search = this.html.find('.uafix-search');
+    this.status = this.html.find('.uafix-status');
+    this.activeFilter = this.html.find('.uafix-active-filter');
+    this.load = this.html.find('.uafix-load');
 
     categories.forEach(function (category, index) {
       var tab = $('<div class="uafix-tab selector" data-index="' + index + '">' + esc(category.title) + '</div>');
 
       tab.on('hover:enter', function () {
         self.category = categories[index];
+        self.filter = null;
+        self.mode = 'category';
+        self.searchQuery = '';
         self.loadCategory(self.category);
       });
 
       self.tabs.append(tab);
     });
+
+    filterGroups.forEach(function (group, index) {
+      var tool = $('<div class="uafix-tool selector" data-filter="' + index + '">' + esc(group.title) + '</div>');
+
+      tool.on('hover:enter', function () {
+        self.openFilter(group);
+      });
+
+      self.tools.append(tool);
+    });
+
+    var recent = $('<div class="uafix-tool selector" data-action="recent">Нещодавно</div>');
+    var reset = $('<div class="uafix-tool selector" data-action="reset">Скинути</div>');
+
+    recent.on('hover:enter', function () {
+      self.showRecent();
+    });
+
+    reset.on('hover:enter', function () {
+      self.filter = null;
+      self.searchQuery = '';
+      self.loadCategory(self.category);
+    });
+
+    this.tools.append(recent).append(reset);
 
     this.search.on('keydown', function (event) {
       if (event.key === 'Enter') {
@@ -299,25 +439,120 @@
       if (Lampa.Background && image) Lampa.Background.change(image);
     });
 
+    this.html.find('.uafix-more').off('hover:enter').on('hover:enter', function () {
+      self.loadNext();
+    });
+
     Lampa.Controller.collectionSet(this.html);
     Lampa.Controller.collectionFocus(this.html.find('.selector').first(), this.html);
   };
 
-  Dashboard.prototype.setCards = function (cards) {
-    this.cards = cards || [];
+  Dashboard.prototype.setCards = function (cards, append) {
+    this.cards = append ? this.cards.concat(cards || []) : cards || [];
     this.grid.html(this.cards.length ? this.cards.map(renderCard).join('') : '<div class="uafix-empty">Нічого не знайдено</div>');
+    this.load.html(this.nextUrl && this.mode === 'category' ? '<div class="uafix-more selector">Завантажити ще</div>' : '');
+    this.updateState();
     this.bindCards();
   };
 
-  Dashboard.prototype.loadCategory = function (category) {
+  Dashboard.prototype.updateState = function () {
     var self = this;
-    var url = absolute(category.url);
 
+    this.tabs.find('.uafix-tab').each(function () {
+      $(this).toggleClass('active', categories[$(this).data('index')] === self.category && self.mode === 'category');
+    });
+
+    this.tools.find('.uafix-tool').removeClass('active');
+
+    if (this.filter) {
+      this.tools.find('[data-filter]').each(function () {
+        var group = filterGroups[$(this).data('filter')];
+        $(this).toggleClass('active', group && group.key === self.filter.key);
+      });
+
+      this.activeFilter.text('Фільтр: ' + this.filter.title + ' - ' + this.filter.valueTitle);
+    }
+    else if (this.mode === 'recent') {
+      this.tools.find('[data-action="recent"]').addClass('active');
+      this.activeFilter.text('Локальна історія відкритих карток');
+    }
+    else if (this.mode === 'search') {
+      this.activeFilter.text('Пошук: ' + this.searchQuery);
+    }
+    else {
+      this.activeFilter.text('');
+    }
+
+    this.status.text(this.cards.length ? ('Показано: ' + this.cards.length + (this.nextUrl && this.mode === 'category' ? ' / є ще' : '')) : '');
+  };
+
+  Dashboard.prototype.openFilter = function (group) {
+    var self = this;
+    var items = [{ title: 'Скинути', reset: true }];
+
+    if (!Lampa.Select || !Lampa.Select.show) {
+      notify('Фільтри недоступні у цій версії Lampa');
+      return;
+    }
+
+    group.items.forEach(function (item) {
+      items.push({
+        title: item.title,
+        value: item.value
+      });
+    });
+
+    Lampa.Select.show({
+      title: group.title,
+      items: items,
+      onSelect: function (item) {
+        if (item.reset || !item.value) self.filter = null;
+        else {
+          self.filter = {
+            key: group.key,
+            title: group.title,
+            value: item.value,
+            valueTitle: item.title
+          };
+        }
+
+        self.loadCategory(self.category);
+      },
+      onBack: function () {
+        Lampa.Controller.toggle('content');
+      }
+    });
+  };
+
+  Dashboard.prototype.filterPostData = function () {
+    if (!this.filter) return false;
+
+    return {
+      xf_sort: 'get',
+      xf_field: this.filter.key,
+      xf_value: this.filter.value
+    };
+  };
+
+  Dashboard.prototype.loadCategory = function (category, append, customUrl) {
+    var self = this;
+    var url = absolute(customUrl || category.url);
+    var postData = customUrl ? false : this.filterPostData();
+
+    this.mode = 'category';
+    this.searchQuery = '';
     this.activity.loader(true);
-    this.grid.html('<div class="uafix-empty">Завантаження...</div>');
+    if (!append) {
+      this.nextUrl = '';
+      this.grid.html('<div class="uafix-empty">Завантаження...</div>');
+      this.load.empty();
+    }
 
-    requestText(url).then(function (html) {
-      self.setCards(parseCards(html, url));
+    requestText(url, { postData: postData }).then(function (html) {
+      var listing = parseListing(html, url);
+
+      self.nextUrl = postData ? '' : listing.nextUrl;
+      self.setCards(listing.cards, append);
     }).catch(function (error) {
       self.grid.html('<div class="uafix-empty">' + esc(error.message) + '</div>');
     }).then(function () {
@@ -325,6 +560,33 @@
     }, function () {
       self.activity.loader(false);
     });
+  };
+
+  Dashboard.prototype.loadNext = function () {
+    if (!this.nextUrl || this.mode !== 'category') return;
+
+    this.load.html('<div class="uafix-empty">Завантаження...</div>');
+    this.loadCategory(this.category, true, this.nextUrl);
+  };
+
+  Dashboard.prototype.showRecent = function () {
+    var list = Lampa.Storage ? Lampa.Storage.get('uafix_recent', '[]') : [];
+
+    if (typeof list === 'string') {
+      try {
+        list = JSON.parse(list);
+      } catch (e) {
+        list = [];
+      }
+    }
+
+    if (!Array.isArray(list)) list = [];
+
+    this.mode = 'recent';
+    this.filter = null;
+    this.searchQuery = '';
+    this.nextUrl = '';
+    this.setCards(list, false);
   };
 
   Dashboard.prototype.loadSearch = function (query) {
@@ -338,11 +600,16 @@
 
     var url = BASE_URL + '/index.php?do=search&subaction=search&story=' + encodeURIComponent(query);
 
+    this.mode = 'search';
+    this.filter = null;
+    this.searchQuery = query;
+    this.nextUrl = '';
     this.activity.loader(true);
     this.grid.html('<div class="uafix-empty">Пошук...</div>');
+    this.load.empty();
 
     requestText(url).then(function (html) {
-      self.setCards(parseCards(html, url));
+      self.setCards(parseCards(html, url).slice(0, DEFAULT_LIMIT));
     }).catch(function (error) {
       self.grid.html('<div class="uafix-empty">' + esc(error.message) + '</div>');
     }).then(function () {
@@ -403,11 +670,28 @@
       detail.originalTitle ? '<div class="uafix-original">' + esc(detail.originalTitle) + '</div>' : '',
       meta.length ? '<div class="uafix-meta">' + meta.join('') + '</div>' : '',
       '<div class="uafix-desc">', esc(detail.description), '</div>',
-      '<div class="uafix-button selector" data-action="play">Дивитись онлайн на укр</div>'
+      '<div class="uafix-actions">',
+      '<div class="uafix-button selector" data-action="play">Дивитись онлайн на укр</div>',
+      detail.trailer ? '<div class="uafix-button secondary selector" data-action="trailer">Дивитись трейлер</div>' : '',
+      '</div>'
     ].join(''));
 
     this.html.find('[data-action="play"]').on('hover:enter', function () {
       self.play();
+    });
+
+    this.html.find('[data-action="trailer"]').on('hover:enter', function () {
+      Lampa.Player.play({
+        url: youtubeWatchUrl(detail.trailer),
+        title: detail.title + ' - трейлер',
+        card: {
+          title: detail.title,
+          original_title: detail.originalTitle,
+          img: detail.image,
+          source: PLUGIN_ID,
+          url: detail.url
+        }
+      });
     });
 
     Lampa.Controller.collectionSet(this.html);

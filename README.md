@@ -21,6 +21,17 @@ Settings -> Extensions -> Plugins -> Add plugin
 - `uafix-lampa-plugin.js` - installable plugin.
 - `UAFIX_LAMPA_NOTES.md` - verified integration notes and known risks.
 
+## Features
+
+- UAFLIX item in the Lampa left menu.
+- Dashboard with UAFLIX categories.
+- Site-like filters: sorting, country, genre, year, studio, hidden anime.
+- Search by Ukrainian or original title.
+- "Load more" pagination for regular category pages.
+- Local "Recently opened" list.
+- Detail screen with metadata, description, trailer button, and Ukrainian online playback button.
+- HLS extraction from the verified `zetvideo.net` iframe contract.
+
 ## Current Status
 
 This is an initial integration prototype. It relies on the currently verified HTML contracts from `uafix.net` and the iframe player contract from `zetvideo.net`.

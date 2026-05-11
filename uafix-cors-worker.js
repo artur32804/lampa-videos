@@ -34,13 +34,21 @@ export default {
       'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0',
       'Accept': request.headers.get('Accept') || '*/*'
     });
+    const init = {
+      method: request.method === 'POST' ? 'POST' : 'GET',
+      headers
+    };
 
     if (referer) headers.set('Referer', referer);
 
-    const upstream = await fetch(targetUrl.toString(), {
-      method: 'GET',
-      headers
-    });
+    if (init.method === 'POST') {
+      const contentType = request.headers.get('Content-Type') || 'application/x-www-form-urlencoded; charset=UTF-8';
+
+      headers.set('Content-Type', contentType);
+      init.body = await request.text();
+    }
+
+    const upstream = await fetch(targetUrl.toString(), init);
 
     const responseHeaders = new Headers(upstream.headers);
     responseHeaders.delete('content-security-policy');
