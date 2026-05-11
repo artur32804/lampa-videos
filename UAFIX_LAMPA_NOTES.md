@@ -1,0 +1,76 @@
+# UAFLIX для Lampa: проверенные точки интеграции
+
+Дата проверки: 2026-05-11.
+
+## Источники данных
+
+- Главная страница: `https://uafix.net/`.
+- Список фильмов: `https://uafix.net/films/`.
+- Поиск: `https://uafix.net/index.php?do=search&subaction=search&story={query}`.
+- Карточка фильма: пример `https://uafix.net/films/weluke-probydzhennia/`.
+- Воспроизведение на карточке идет через iframe `https://zetvideo.net/vod/{id}`.
+
+## Подтвержденные HTML-контракты
+
+- Плитки каталога:
+  - контейнер `.video-item`;
+  - ссылка `a.vi-img[href]`;
+  - постер `img[src]` или `img[data-src]`;
+  - название `.vi-title`;
+  - возрастной лейбл `.age`.
+- Результаты поиска:
+  - контейнер `a.sres-wrap[href]`;
+  - постер `.sres-img img`;
+  - название `h2`;
+  - описание `.sres-desc`.
+- Карточка фильма:
+  - заголовок `h1`;
+  - постер `.fposter img`, `.fimg img`, `.fcols img` или `img.gogo-online`;
+  - описание `#fdesc`, `.fdesc` или `[itemprop="description"]`;
+  - iframe `#fplayer iframe[src]`, `.fplayer iframe[src]` или `meta[property="og:video:iframe"]`.
+
+## Воспроизведение
+
+Для тестовой карточки iframe:
+
+```text
+https://zetvideo.net/vod/54825
+```
+
+при запросе с Referer карточки отдает `Playerjs`-конфиг с прямым HLS:
+
+```text
+https://zetvideo.net/vod/films/a.great.awakening.2026.1080p.webrip.x264.aac.uaflix_54825/hls/index.m3u8
+```
+
+Проверено, что сам `.m3u8` доступен напрямую и содержит варианты качества 1080/720/480.
+
+## Реализованный прототип
+
+Файл: `uafix-lampa-plugin.js`.
+
+Возможности:
+
+- добавляет пункт `UAFLIX` в левое меню Lampa;
+- открывает dashboard с последними фильмами, категориями и поиском;
+- показывает плитки с постером, названием, возрастным лейблом;
+- открывает карточку с описанием и метаданными;
+- добавляет кнопку `Дивитись онлайн на укр`;
+- извлекает прямой HLS из iframe и запускает `Lampa.Player.play(...)`.
+
+## Ограничения и риски
+
+- `uafix.net` не отдает `Access-Control-Allow-Origin`, поэтому обычный браузерный `fetch` может не подойти. Плагин использует `Lampa.Reguest().native(...)`, как в существующих Lampa-плагинах.
+- Доступ к iframe `zetvideo.net/vod/{id}` зависит от Referer. Без Referer тестовый запрос отдавал 404, с Referer страницы фильма отдавал Playerjs-конфиг.
+- HTML-контракты не являются официальным API. Для промышленного релиза лучше согласовать с uafix.net стабильный JSON endpoint для списков, поиска, карточки и `m3u8`.
+- В текущем прототипе сериальные сезоны/серии не выделены отдельным UI. Если uafix.net отдает сериалы через один iframe-плеер с playlist внутри Playerjs, нужен отдельный парсер playlist.
+
+## Проверка
+
+Локально выполнена синтаксическая проверка JavaScript:
+
+```bash
+node --check uafix-lampa-plugin.js
+```
+
+Для интеграционной проверки нужно установить файл как расширение Lampa и проверить на целевых платформах: Browser, Android TV, WebOS/Tizen, если они входят в scope заказа.
