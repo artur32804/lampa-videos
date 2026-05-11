@@ -347,6 +347,15 @@
     return match ? 'https://www.youtube.com/watch?v=' + match[1] : url;
   }
 
+  function startNavigation(component) {
+    if (!component || !component.html || !component.activity) return;
+    if (Lampa.Activity && Lampa.Activity.active && Lampa.Activity.active().activity !== component.activity) return;
+
+    Lampa.Controller.collectionSet(component.html);
+    Lampa.Controller.collectionFocus(component.html.find('.selector').first(), component.html);
+    Lampa.Controller.toggle('content');
+  }
+
   function Dashboard(object) {
     var self = this;
 
@@ -363,7 +372,7 @@
     this.render = Dashboard.prototype.render;
     this.destroy = Dashboard.prototype.destroy;
     this.start = function () {
-      if (self.activity) self.activity.toggle();
+      startNavigation(self);
     };
   }
 
@@ -434,7 +443,7 @@
   };
 
   Dashboard.prototype.start = function () {
-    this.activity.toggle();
+    startNavigation(this);
   };
 
   Dashboard.prototype.bindCards = function () {
@@ -646,7 +655,7 @@
     this.render = Detail.prototype.render;
     this.destroy = Detail.prototype.destroy;
     this.start = function () {
-      if (self.activity) self.activity.toggle();
+      startNavigation(self);
     };
   }
 
@@ -671,7 +680,7 @@
   };
 
   Detail.prototype.start = function () {
-    this.activity.toggle();
+    startNavigation(this);
   };
 
   Detail.prototype.renderDetail = function () {
