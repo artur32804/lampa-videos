@@ -4,6 +4,7 @@
   var PLUGIN_ID = 'uafix';
   var BASE_URL = 'https://uafix.net';
   var DEFAULT_LIMIT = 24;
+  var PROXY_URL = '';
 
   var state = {
     injected: false,
@@ -66,10 +67,13 @@
 
     return new Promise(function (resolve, reject) {
       var network = new Lampa.Reguest();
+      var targetUrl = options.proxy === false || !PROXY_URL
+        ? url
+        : PROXY_URL + '?url=' + encodeURIComponent(url) + (options.referer ? '&referer=' + encodeURIComponent(options.referer) : '');
 
       network.timeout(options.timeout || 15000);
       network.native(
-        url,
+        targetUrl,
         function (response) {
           if (typeof response === 'string') resolve(response);
           else if (response && typeof response.responseText === 'string') resolve(response.responseText);
@@ -79,7 +83,7 @@
           reject(new Error(network.errorDecode ? network.errorDecode(a, c) : 'Network error'));
         },
         false,
-        options.headers ? { headers: options.headers } : undefined
+        options.headers && !PROXY_URL ? { headers: options.headers } : undefined
       );
     });
   }
@@ -171,6 +175,7 @@
 
   function extractStream(iframeUrl, referer) {
     return requestText(iframeUrl, {
+      referer: referer,
       headers: {
         Referer: referer,
         'User-Agent': navigator.userAgent
