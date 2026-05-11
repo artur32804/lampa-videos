@@ -423,6 +423,9 @@
 
     this.loadCategory(this.category);
     this.activity.loader(false);
+  };
+
+  Dashboard.prototype.start = function () {
     this.activity.toggle();
   };
 
@@ -646,11 +649,13 @@
       self.html.find('.uafix-detail-body').html('<div class="uafix-empty">' + esc(error.message) + '</div>');
     }).then(function () {
       self.activity.loader(false);
-      self.activity.toggle();
     }, function () {
       self.activity.loader(false);
-      self.activity.toggle();
     });
+  };
+
+  Detail.prototype.start = function () {
+    this.activity.toggle();
   };
 
   Detail.prototype.renderDetail = function () {
