@@ -359,6 +359,9 @@
     this.nextUrl = '';
     this.mode = 'category';
     this.searchQuery = '';
+    this.create = Dashboard.prototype.create;
+    this.render = Dashboard.prototype.render;
+    this.destroy = Dashboard.prototype.destroy;
     this.start = function () {
       if (self.activity) self.activity.toggle();
     };
@@ -639,6 +642,9 @@
     var self = this;
 
     this.object = object || {};
+    this.create = Detail.prototype.create;
+    this.render = Detail.prototype.render;
+    this.destroy = Detail.prototype.destroy;
     this.start = function () {
       if (self.activity) self.activity.toggle();
     };
