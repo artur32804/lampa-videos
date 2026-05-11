@@ -348,6 +348,8 @@
   }
 
   function Dashboard(object) {
+    var self = this;
+
     this.object = object || {};
     this.network = new Lampa.Reguest();
     this.scroll = new Lampa.Scroll({ mask: true, over: true });
@@ -357,6 +359,9 @@
     this.nextUrl = '';
     this.mode = 'category';
     this.searchQuery = '';
+    this.start = function () {
+      if (self.activity) self.activity.toggle();
+    };
   }
 
   Dashboard.prototype.create = function () {
@@ -631,7 +636,12 @@
   };
 
   function Detail(object) {
+    var self = this;
+
     this.object = object || {};
+    this.start = function () {
+      if (self.activity) self.activity.toggle();
+    };
   }
 
   Detail.prototype.create = function () {
