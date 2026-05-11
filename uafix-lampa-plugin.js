@@ -117,6 +117,10 @@
         ? url
         : PROXY_URL + '?url=' + encodeURIComponent(url) + (options.referer ? '&referer=' + encodeURIComponent(options.referer) : '');
 
+      var params = { dataType: 'text' };
+
+      if (options.headers && !PROXY_URL) params.headers = options.headers;
+
       network.timeout(options.timeout || 15000);
       network.native(
         targetUrl,
@@ -129,10 +133,7 @@
           reject(new Error(network.errorDecode ? network.errorDecode(a, c) : 'Network error'));
         },
         options.postData || false,
-        {
-          dataType: 'text',
-          headers: options.headers && !PROXY_URL ? options.headers : undefined
-        }
+        params
       );
     });
   }
@@ -348,12 +349,24 @@
   }
 
   function startNavigation(component) {
-    if (!component || !component.html || !component.activity) return;
-    if (Lampa.Activity && Lampa.Activity.active && Lampa.Activity.active().activity !== component.activity) return;
+    if (!component || !component.html) return;
 
-    Lampa.Controller.collectionSet(component.html);
-    Lampa.Controller.collectionFocus(component.html.find('.selector').first(), component.html);
-    Lampa.Controller.toggle('content');
+    setTimeout(function () {
+      try {
+        if (component.destroyed) return;
+        if (Lampa.Activity && Lampa.Activity.active && Lampa.Activity.active().activity !== component.activity) return;
+
+        var root = component.html instanceof jQuery ? component.html[0] : component.html;
+        var first = root ? root.querySelector('.selector') : null;
+
+        if (!root || !first) return;
+
+        Lampa.Controller.collectionSet(root);
+        Lampa.Controller.collectionFocus(first, root);
+      } catch (e) {
+        console.log('[UAFLIX] navigation start skipped:', e.message);
+      }
+    }, 100);
   }
 
   function Dashboard(object) {
